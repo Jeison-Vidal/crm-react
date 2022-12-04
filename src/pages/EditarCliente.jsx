@@ -1,11 +1,23 @@
-
-import React from 'react'
-import { useNavigate,Form, useActionData,redirect} from 'react-router-dom'
+import { Form, useActionData, useLoaderData, useNavigate,redirect } from 'react-router-dom'
 import Formulario from '../components/Formulario'
+import { obtenerCliente,actualizarCliente } from "../data/clientes"
 import Error from '../components/Error'
-import { agregarCliente } from '../data/clientes'
 
-export async function action({request}){
+export async function loader({params}){
+    const cliente= await obtenerCliente(params.clienteId)
+
+    if(Object.values(cliente).length===0){
+        throw new Response('',{
+            status:404,
+            statusText:'El Cliente no fue encontrado'
+        })
+    }
+
+   
+    return cliente
+}
+
+export async function action({request,params}){
   const formData=await request.formData()
   const datos=Object.fromEntries(formData)
   //validacion
@@ -27,24 +39,21 @@ export async function action({request}){
 
     return errores
   }
-await agregarCliente(datos)
-return redirect('/')
-
- 
+  await actualizarCliente(params.clienteId, datos)
+  return redirect('/')
 }
 
 
-
-function NuevoCliente() {
-  const navigate=useNavigate()
-  const errores=useActionData()
-  console.log(errores)
+function EditarCliente() {
+    const navigate=useNavigate()
+    const cliente=useLoaderData()
+    const errores= useActionData()
   return (
     <>
     <h1 className='font-black text-4xl text-blue-900'>
-        Nuevo cliente
+       Editar cliente
     </h1 >
-    <p className='mt-3'>Llena todos los campos para registrar un nuevo cliente</p>
+    <p className='mt-3'>A continuacion pordras modificar las datos de un cliente</p>
     <div className='flex justify-end'>
         <button className='bg-blue-800 text-white px-3 py-1 font-bold uppercase' onClick={()=>navigate(-1)}>
 
@@ -58,8 +67,10 @@ function NuevoCliente() {
     <Form method='post'
        noValidate
     >
-      <Formulario/>
-      <input type="submit" className='mt-5 w-full bg-blue-800 p-3 uppercase font-bold text white text-lg mt' value="Registrar cliente"  />
+      <Formulario
+      cliente={cliente}
+      />
+      <input type="submit" className='mt-5 w-full bg-blue-800 p-3 uppercase font-bold text white text-lg mt' value="Guardar Cambios"  />
       </Form>
     </div>
     
@@ -67,4 +78,4 @@ function NuevoCliente() {
   )
 }
 
-export default NuevoCliente
+export default EditarCliente
